@@ -928,11 +928,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: 982ff92f-034a-412a-b1ee-8bb58c7da9f6
+  cloudProjectId: 4d3e52b7-2635-497a-9025-d16ce3cc9a68
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: Dungeon Delvers
-  organizationId: unity_552122
+  organizationId: wdg_game_maker
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

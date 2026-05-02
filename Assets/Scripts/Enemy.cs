@@ -11,7 +11,7 @@ public class Enemy : NetworkBehaviour
     [SerializeField] private Transform[] patrolPoints;
 
     private float attackRange = 6;
-    private float sightRange = 17.5f;
+    private float sightRange = 15;
 
     private int power;
 
