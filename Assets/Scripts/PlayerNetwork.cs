@@ -9,6 +9,7 @@ public class PlayerNetwork : NetworkBehaviour
     [SerializeField] private Rigidbody rb;
     private CinemachineCamera cameraTarget;
     private Transform cam;
+    private Transform targetTransform;
     private float moveSpeed = 5;
     private float jumpHeight = 8;
     
@@ -23,16 +24,31 @@ public class PlayerNetwork : NetworkBehaviour
 
         cameraTarget = FindFirstObjectByType<CinemachineCamera>();
         cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
-
-        cameraTarget.Target.TrackingTarget = transform;
+        targetTransform = GameObject.Find("Target").transform;
+        cameraTarget.Target.TrackingTarget = targetTransform;
     }
     private void Update()
     {
         if (!IsOwner) return;
         
         spherePos = new Vector3(transform.position.x, transform.position.y + offset, transform.position.z);
+
+        LockMouse();
         PlayerMove();
     }
+
+    private void LockMouse()
+    {
+        if (Input.GetMouseButton(1))
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }
+    }
+
 
     private void PlayerMove()
     {

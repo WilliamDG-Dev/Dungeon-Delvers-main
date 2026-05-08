@@ -44,38 +44,26 @@ public class Enemy : NetworkBehaviour
         if (playerPos.Count == 0)
             return;
 
-        Debug.Log(playerPos.Count);
-        Debug.Log(playerPos[0].name);
-
         float distanceFromPlayer = DistanceToPlayer(playerPos[0]);
 
-        if (PlayerDead())
-        {
-            thisEnemy.isStopped = true;
-            return;
-        }
-
-        // CHASE
-        if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+        if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange && !PlayerDead())
         {
             anim.SetBool("Attacking", false);
 
             ChasePlayer();
         }
 
-        // PATROL
-        else if (distanceFromPlayer > sightRange)
+        else if (distanceFromPlayer > sightRange || PlayerDead())
         {
             anim.SetBool("Attacking", false);
-
             Patrol();
         }
 
-        // ATTACK
         else if (distanceFromPlayer <= attackRange && !PlayerDead())
         {
             thisEnemy.isStopped = true;
             anim.SetBool("Walking", false);
+            transform.LookAt(new Vector3(playerPos[0].transform.position.x, transform.position.y, playerPos[0].transform.position.z));
             anim.SetBool("Attacking", true);
         }
     }
@@ -86,6 +74,13 @@ public class Enemy : NetworkBehaviour
         if (playerPos.Count > 0 && DistanceToPlayer(playerPos[0]) <= attackRange)
         {
             power = Random.Range(13, 17);
+            if (playerPos[0].GetComponent<PlayerHealth>().ReturnCurrentHealth() <= power)
+            {
+                thisEnemy.isStopped = true;
+                int point = Random.Range(0, patrolPoints.Length);
+                thisEnemy.SetDestination(patrolPoints[point].position);
+                Debug.Log("Kinda Works");
+            }
             playerPos[0].GetComponent<PlayerHealth>().TakeDamage(power);
         }
     }

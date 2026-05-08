@@ -1,3 +1,4 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
@@ -52,5 +53,10 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsServer) return;
 
         currentHealth.Value -= amount;
+    }
+
+    public int ReturnCurrentHealth()
+    {
+        return currentHealth.Value;
     }
 }
