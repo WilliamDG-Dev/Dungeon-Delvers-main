@@ -17,11 +17,11 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button hostLobbyBtn;
     [SerializeField] private Button leaveLobbyBtn;
     [SerializeField] private GameObject playerHealthBar;
+    [SerializeField] private GameObject joinGameScreen;
     [SerializeField] private List<GameObject> lobbyButtonList = new List<GameObject>();
 
     private void Awake()
     {
-        UIVisibility(true);
         hostLobbyBtn.onClick.AddListener(() => { LobbyChecks(); UIVisibility(false); });
         leaveLobbyBtn.onClick.AddListener(() => { relay.LeaveGame(); });
 
@@ -89,7 +89,7 @@ public class NetworkManagerUI : MonoBehaviour
 
     private void UIVisibility(bool visible)
     {
-        Transform[] uiElements = gameObject.GetComponentsInChildren<Transform>();
+        Transform[] uiElements = joinGameScreen.GetComponentsInChildren<Transform>();
         
         foreach (Transform element in uiElements)
         {
@@ -98,6 +98,11 @@ public class NetworkManagerUI : MonoBehaviour
         leaveLobbyBtn.gameObject.SetActive(!visible);
         playerHealthBar.gameObject.SetActive(!visible);
         
+    }
+
+    public void ExitGame()
+    {
+        Application.Quit();
     }
 }
 

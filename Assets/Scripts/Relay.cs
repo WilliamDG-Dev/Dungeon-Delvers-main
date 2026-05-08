@@ -35,10 +35,17 @@ public class Relay : MonoBehaviour
     {
         await UnityServices.InitializeAsync();
 
-        AuthenticationService.Instance.SignedIn += () => { Debug.Log("Signed in " + AuthenticationService.Instance.PlayerId);};
-        await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        if (!AuthenticationService.Instance.IsSignedIn)
+        {
+            AuthenticationService.Instance.SignedIn += () => { Debug.Log("Signed in " + AuthenticationService.Instance.PlayerId); };
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        }
+        else
+        {
+            Debug.Log("Already signed in " + AuthenticationService.Instance.PlayerId);
+        }
 
-        playerName = "WillDG" + UnityEngine.Random.Range(10, 99);
+        playerName = "WillDG" + Random.Range(10, 99);
         Debug.Log(playerName);
     }
 
@@ -68,13 +75,6 @@ public class Relay : MonoBehaviour
             }
         }
     }
-
-
-    public bool IsLobbyHost()
-    {
-        return joinedLobby != null && joinedLobby.HostId == AuthenticationService.Instance.PlayerId;
-    }
-
 
     public async void CreateLobby(string lobbyName)
     {
@@ -232,10 +232,14 @@ public class Relay : MonoBehaviour
 
             if (!string.IsNullOrEmpty(lobbyId))
             {
-                await LobbyService.Instance.RemovePlayerAsync(
-                    lobbyId,
-                    AuthenticationService.Instance.PlayerId
-                );
+                if (NetworkManager.Singleton.IsHost)
+                {
+                    await LobbyService.Instance.DeleteLobbyAsync(lobbyId);
+                }
+                else
+                {
+                    await LobbyService.Instance.RemovePlayerAsync(lobbyId, AuthenticationService.Instance.PlayerId);  
+                }
             }
         }
         catch (LobbyServiceException e)
@@ -244,8 +248,16 @@ public class Relay : MonoBehaviour
         }
         finally
         {
+            if (NetworkManager.Singleton.IsHost)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
+
+                await Task.Delay(1000);
+            }
+            
             NetworkManager.Singleton.Shutdown();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 

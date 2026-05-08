@@ -7,9 +7,11 @@ using UnityEngine.InputSystem;
 public class PlayerNetwork : NetworkBehaviour
 {
     [SerializeField] private Rigidbody rb;
+    [SerializeField] private Transform targetTransform;
+    private Animator anim;
+    private PlayerHealth playerHealthScript;
     private CinemachineCamera cameraTarget;
     private Transform cam;
-    private Transform targetTransform;
     private float moveSpeed = 5;
     private float jumpHeight = 8;
     
@@ -22,9 +24,10 @@ public class PlayerNetwork : NetworkBehaviour
     {
         if (!IsOwner) return;
 
+        anim = GetComponent<Animator>();
+        playerHealthScript = gameObject.GetComponent<PlayerHealth>();
         cameraTarget = FindFirstObjectByType<CinemachineCamera>();
         cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
-        targetTransform = GameObject.Find("Target").transform;
         cameraTarget.Target.TrackingTarget = targetTransform;
     }
     private void Update()
@@ -34,7 +37,11 @@ public class PlayerNetwork : NetworkBehaviour
         spherePos = new Vector3(transform.position.x, transform.position.y + offset, transform.position.z);
 
         LockMouse();
-        PlayerMove();
+        
+        if(!playerHealthScript.IsDead())
+        {
+            PlayerMove();
+        }
     }
 
     private void LockMouse()
@@ -60,12 +67,17 @@ public class PlayerNetwork : NetworkBehaviour
 
         if (direction.magnitude >= 0.1f)
         {
+            anim.SetBool("Moving", true);
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
             transform.rotation = Quaternion.Euler(0, angle, 0);
 
             Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
             rb.MovePosition(rb.position + moveDir.normalized * moveSpeed * Time.deltaTime);
+        }
+        else
+        {
+            anim.SetBool("Moving", false);
         }
     }
 

@@ -1,6 +1,7 @@
 using System;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.UI;
 
 public class PlayerHealth : NetworkBehaviour
@@ -8,9 +9,8 @@ public class PlayerHealth : NetworkBehaviour
     private Slider healthBar;
     private int startHealth = 100;
     private NetworkVariable<int> currentHealth = new NetworkVariable<int>();
-
-    public bool isDead;
-
+    private NavMeshObstacle navObstacle;
+    private Animator anim;
 
     public override void OnNetworkSpawn()
     {
@@ -37,15 +37,26 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
-    void Update()
+    void Start()
     {
         if (!IsOwner) return;
 
-        if (currentHealth.Value <= 0 && !isDead)
-        {
-            isDead = true;
-            Debug.Log("The player has died!");
-        }
+        anim = GetComponent<Animator>();
+        anim.SetBool("Died", false);
+
+        navObstacle = GetComponent<NavMeshObstacle>();
+        navObstacle.enabled = true;
+    }
+
+    public bool IsDead()
+    {
+        return currentHealth.Value <= 0;
+    }
+
+    public void DeathState()
+    {
+        anim.SetBool("Died", true);
+        navObstacle.enabled = false;        
     }
 
     public void TakeDamage(int amount)

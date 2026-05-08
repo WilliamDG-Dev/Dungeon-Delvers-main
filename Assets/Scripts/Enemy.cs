@@ -15,9 +15,10 @@ public class Enemy : NetworkBehaviour
 
     private int power;
 
+    private GameObject currentTarget;
+
     private NavMeshAgent thisEnemy;
     private Animator anim;
-    private List<GameObject> playerPos = new List<GameObject>();
 
     private void Start()
     {
@@ -29,66 +30,73 @@ public class Enemy : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        try
+        FindPlayers();
+
+        if (currentTarget == null)
         {
-            playerPos = NetworkManager.Singleton.ConnectedClientsList
-                .Select(client => client.PlayerObject.gameObject)
-                .OrderBy(player => DistanceToPlayer(player))
-                .ToList();
-        }
-        catch
-        {
-            playerPos.Clear();
-        }
-
-        if (playerPos.Count == 0)
-            return;
-
-        float distanceFromPlayer = DistanceToPlayer(playerPos[0]);
-
-        if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange && !PlayerDead())
-        {
-            anim.SetBool("Attacking", false);
-
-            ChasePlayer();
-        }
-
-        else if (distanceFromPlayer > sightRange || PlayerDead())
-        {
-            anim.SetBool("Attacking", false);
             Patrol();
         }
-
-        else if (distanceFromPlayer <= attackRange && !PlayerDead())
+        else
         {
-            thisEnemy.isStopped = true;
-            anim.SetBool("Walking", false);
-            transform.LookAt(new Vector3(playerPos[0].transform.position.x, transform.position.y, playerPos[0].transform.position.z));
-            anim.SetBool("Attacking", true);
+            float distanceFromPlayer = DistanceToPlayer(currentTarget);
+
+            if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+            {
+                ChasePlayer();
+            }
+
+            else if (distanceFromPlayer > sightRange)
+            {
+                Patrol();
+            }
+
+            else if (distanceFromPlayer <= attackRange)
+            {
+                thisEnemy.isStopped = true;
+
+                anim.SetBool("Walking", false);
+
+                transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
+
+                anim.SetBool("Attacking", true);
+            }
         }
     }
 
     // ANIMATION EVENT
     private void DamagePlayer()
     {
-        if (playerPos.Count > 0 && DistanceToPlayer(playerPos[0]) <= attackRange)
+        if (currentTarget != null && DistanceToPlayer(currentTarget) <= attackRange)
         {
             power = Random.Range(13, 17);
-            if (playerPos[0].GetComponent<PlayerHealth>().ReturnCurrentHealth() <= power)
+            PlayerHealth playerHP = currentTarget.GetComponent<PlayerHealth>();
+            if (playerHP.ReturnCurrentHealth() <= power)
             {
-                thisEnemy.isStopped = true;
-                int point = Random.Range(0, patrolPoints.Length);
-                thisEnemy.SetDestination(patrolPoints[point].position);
-                Debug.Log("Kinda Works");
+                playerHP.DeathState();
             }
-            playerPos[0].GetComponent<PlayerHealth>().TakeDamage(power);
+            playerHP.TakeDamage(power);
         }
     }
 
-    private bool PlayerDead()
+    private void FindPlayers()
     {
-        PlayerHealth health = playerPos[0].GetComponent<PlayerHealth>();
-        return health != null && health.isDead;
+        try
+        {
+            currentTarget = NetworkManager.Singleton.ConnectedClientsList
+                .Select(client => client.PlayerObject.gameObject)
+                .Where(player =>
+                {
+                    PlayerHealth health = player.GetComponent<PlayerHealth>();
+
+                    return health != null && !health.IsDead();
+                })
+                .OrderBy(player => DistanceToPlayer(player))
+                .FirstOrDefault();
+        }
+        catch
+        {
+            currentTarget = null;
+        }
     }
 
     private float DistanceToPlayer(GameObject player)
@@ -98,11 +106,12 @@ public class Enemy : NetworkBehaviour
 
     private void Patrol()
     {
+        anim.SetBool("Attacking", false);
+        thisEnemy.isStopped = false;
+        anim.SetBool("Walking", true);
+
         if (!thisEnemy.pathPending && thisEnemy.remainingDistance < 0.5f)
         {
-            thisEnemy.isStopped = false;
-            anim.SetBool("Walking", true);
-
             int point = Random.Range(0, patrolPoints.Length);
             thisEnemy.SetDestination(patrolPoints[point].position);
         }
@@ -110,10 +119,11 @@ public class Enemy : NetworkBehaviour
 
     private void ChasePlayer()
     {
+        anim.SetBool("Attacking", false);
         anim.SetBool("Walking", true);
 
         thisEnemy.isStopped = false;
-        thisEnemy.SetDestination(playerPos[0].transform.position);
+        thisEnemy.SetDestination(currentTarget.transform.position);
     }
 
     private void OnDrawGizmosSelected()
