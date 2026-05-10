@@ -19,12 +19,16 @@ public class PlayerHealth : NetworkBehaviour
             currentHealth.Value = startHealth;
         }
 
+        anim = GetComponent<Animator>();
+        navObstacle = GetComponent<NavMeshObstacle>();
+
+        currentHealth.OnValueChanged += OnHealthChanged;
+
         if (IsOwner)
         {
             healthBar = GameObject.Find("Health").GetComponentInChildren<Slider>();
             healthBar.maxValue = startHealth;
 
-            currentHealth.OnValueChanged += OnHealthChanged;
             healthBar.value = currentHealth.Value;
         }
     }
@@ -35,17 +39,17 @@ public class PlayerHealth : NetworkBehaviour
         {
             healthBar.value = newValue;
         }
+
+        if (newValue <= 0)
+        {
+            DeathState();
+        }
     }
 
     void Start()
     {
         if (!IsOwner) return;
 
-        anim = GetComponent<Animator>();
-        anim.SetBool("Died", false);
-
-        navObstacle = GetComponent<NavMeshObstacle>();
-        navObstacle.enabled = true;
     }
 
     public bool IsDead()
@@ -53,7 +57,7 @@ public class PlayerHealth : NetworkBehaviour
         return currentHealth.Value <= 0;
     }
 
-    public void DeathState()
+    private void DeathState()
     {
         anim.SetBool("Died", true);
         navObstacle.enabled = false;        

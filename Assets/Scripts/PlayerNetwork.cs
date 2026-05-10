@@ -36,7 +36,7 @@ public class PlayerNetwork : NetworkBehaviour
         
         spherePos = new Vector3(transform.position.x, transform.position.y + offset, transform.position.z);
 
-        LockMouse();
+        MouseActions();
         
         if(!playerHealthScript.IsDead())
         {
@@ -44,8 +44,10 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
-    private void LockMouse()
+    private void MouseActions()
     {
+        anim.SetBool("AutoAttack", Input.GetMouseButton(0));
+
         if (Input.GetMouseButton(1))
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -65,19 +67,17 @@ public class PlayerNetwork : NetworkBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space) && Grounded()) rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
 
+
+        anim.SetBool("Moving", direction.magnitude >= 0.1f);
+
         if (direction.magnitude >= 0.1f)
         {
-            anim.SetBool("Moving", true);
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
-            transform.rotation = Quaternion.Euler(0, angle, 0);
+            rb.MoveRotation(Quaternion.Euler(0, angle, 0));
 
             Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
             rb.MovePosition(rb.position + moveDir.normalized * moveSpeed * Time.deltaTime);
-        }
-        else
-        {
-            anim.SetBool("Moving", false);
         }
     }
 

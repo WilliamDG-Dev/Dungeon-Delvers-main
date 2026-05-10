@@ -70,10 +70,6 @@ public class Enemy : NetworkBehaviour
         {
             power = Random.Range(13, 17);
             PlayerHealth playerHP = currentTarget.GetComponent<PlayerHealth>();
-            if (playerHP.ReturnCurrentHealth() <= power)
-            {
-                playerHP.DeathState();
-            }
             playerHP.TakeDamage(power);
         }
     }
@@ -102,6 +98,15 @@ public class Enemy : NetworkBehaviour
     private float DistanceToPlayer(GameObject player)
     {
         return Vector3.Distance(player.transform.position, this.transform.position);
+    }
+
+    private void AllPlayersDead()
+    {
+        if (currentTarget == null)
+        {
+            Relay relay = GameObject.Find("Relay").GetComponent<Relay>();
+            relay.LeaveGame();
+        }
     }
 
     private void Patrol()
