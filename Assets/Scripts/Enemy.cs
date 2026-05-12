@@ -5,10 +5,14 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 
 public class Enemy : NetworkBehaviour
 {
     [SerializeField] private Transform[] patrolPoints;
+    [SerializeField] private Slider enemyHealth;
+    private int startHealth = 5000;
+    private NetworkVariable<int> currentHealth = new NetworkVariable<int>();
 
     private float attackRange = 6;
     private float sightRange = 15;
@@ -24,6 +28,11 @@ public class Enemy : NetworkBehaviour
     {
         thisEnemy = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
+
+        currentHealth.Value = startHealth;
+        enemyHealth.value = currentHealth.Value;
+
+        if (!IsServer) return;
     }
 
     private void Update()
@@ -100,13 +109,9 @@ public class Enemy : NetworkBehaviour
         return Vector3.Distance(player.transform.position, this.transform.position);
     }
 
-    private void AllPlayersDead()
+    public bool AllPlayersDead()
     {
-        if (currentTarget == null)
-        {
-            Relay relay = GameObject.Find("Relay").GetComponent<Relay>();
-            relay.LeaveGame();
-        }
+        return currentTarget == null;
     }
 
     private void Patrol()

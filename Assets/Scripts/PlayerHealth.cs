@@ -46,12 +46,6 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
-    void Start()
-    {
-        if (!IsOwner) return;
-
-    }
-
     public bool IsDead()
     {
         return currentHealth.Value <= 0;
@@ -67,7 +61,10 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        currentHealth.Value -= amount;
+        if (!anim.GetBool("Blocking"))
+        {
+            currentHealth.Value -= amount;
+        }
     }
 
     public int ReturnCurrentHealth()

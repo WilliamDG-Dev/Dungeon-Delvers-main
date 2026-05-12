@@ -1,3 +1,6 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using Unity.VisualScripting;
@@ -14,11 +17,12 @@ public class PlayerNetwork : NetworkBehaviour
     private Transform cam;
     private float moveSpeed = 5;
     private float jumpHeight = 8;
+    private float rayDistance = 2;
     
-    private Vector3 spherePos;
-    private float offset = 1;
     private float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
+
+    private float attackRange = 6;
 
     private void Start()
     {
@@ -33,20 +37,25 @@ public class PlayerNetwork : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
-        
-        spherePos = new Vector3(transform.position.x, transform.position.y + offset, transform.position.z);
 
-        MouseActions();
+        Actions();
         
         if(!playerHealthScript.IsDead())
         {
             PlayerMove();
         }
+
+        PlayersDead();
     }
 
-    private void MouseActions()
+    private void Actions()
     {
-        anim.SetBool("AutoAttack", Input.GetMouseButton(0));
+        anim.SetBool("AutoAttack", Input.GetKeyDown(KeyCode.Alpha1));
+
+        if (Input.GetKeyDown(KeyCode.Alpha2) && !anim.GetBool("Blocking"))
+        {
+            StartCoroutine(BlockInterval(5));
+        }
 
         if (Input.GetMouseButton(1))
         {
@@ -58,6 +67,24 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
+    private void DamageEnemy()
+    {
+        if(DistanceCheck(FindClosestEnemy()) <= attackRange)
+        {
+            Debug.Log("Damaged Enemy");
+        }
+    }
+
+    private GameObject FindClosestEnemy()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        return enemies.OrderBy(enemy => DistanceCheck(enemy)).FirstOrDefault();
+    }
+
+    private float DistanceCheck(GameObject otherTarget)
+    {
+        return Vector3.Distance(transform.position, otherTarget.transform.position);
+    }
 
     private void PlayerMove()
     {
@@ -81,22 +108,25 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
-    private bool Grounded()
+    private void PlayersDead()
     {
-        Collider[] colliders = Physics.OverlapSphere(spherePos, 1);
-
-        foreach (Collider collider in colliders)
+        Enemy enemyScript = GameObject.Find("Enemy").GetComponent<Enemy>();
+        if(enemyScript.AllPlayersDead())
         {
-            if (collider.gameObject.tag == "Ground")
-            {
-                return true;
-            }
+            Relay relay = GameObject.Find("Relay").GetComponent<Relay>();
+            relay.LeaveGame();
         }
-        return false;
     }
 
-    private void OnDrawGizmos()
+    private IEnumerator BlockInterval(int time)
     {
-        Gizmos.DrawWireSphere(spherePos, 1);
+        anim.SetBool("Blocking", true);
+        yield return new WaitForSeconds(time);
+        anim.SetBool("Blocking", false);
+    }
+
+    private bool Grounded()
+    {
+        return Physics.Raycast(transform.position + new Vector3(0,1,0), Vector3.down, rayDistance, LayerMask.GetMask("Ground"));
     }
 }
