@@ -260,5 +260,4 @@ public class Relay : MonoBehaviour
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
-
 }

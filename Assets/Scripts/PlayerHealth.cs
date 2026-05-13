@@ -8,7 +8,7 @@ public class PlayerHealth : NetworkBehaviour
 {
     private Slider healthBar;
     private int startHealth = 100;
-    private NetworkVariable<int> currentHealth = new NetworkVariable<int>();
+    private NetworkVariable<int> playerCurrentHealth = new NetworkVariable<int>();
     private NavMeshObstacle navObstacle;
     private Animator anim;
 
@@ -16,20 +16,20 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (IsServer)
         {
-            currentHealth.Value = startHealth;
+            playerCurrentHealth.Value = startHealth;
         }
 
         anim = GetComponent<Animator>();
         navObstacle = GetComponent<NavMeshObstacle>();
 
-        currentHealth.OnValueChanged += OnHealthChanged;
+        playerCurrentHealth.OnValueChanged += OnHealthChanged;
 
         if (IsOwner)
         {
             healthBar = GameObject.Find("Health").GetComponentInChildren<Slider>();
             healthBar.maxValue = startHealth;
 
-            healthBar.value = currentHealth.Value;
+            healthBar.value = playerCurrentHealth.Value;
         }
     }
 
@@ -48,7 +48,7 @@ public class PlayerHealth : NetworkBehaviour
 
     public bool IsDead()
     {
-        return currentHealth.Value <= 0;
+        return playerCurrentHealth.Value <= 0;
     }
 
     private void DeathState()
@@ -63,12 +63,7 @@ public class PlayerHealth : NetworkBehaviour
 
         if (!anim.GetBool("Blocking"))
         {
-            currentHealth.Value -= amount;
+            playerCurrentHealth.Value -= amount;
         }
-    }
-
-    public int ReturnCurrentHealth()
-    {
-        return currentHealth.Value;
     }
 }

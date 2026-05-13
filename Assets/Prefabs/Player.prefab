@@ -539,7 +539,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkAnimatorExpanded: 0
-  AuthorityMode: 0
+  AuthorityMode: 1
   m_Animator: {fileID: 6100187795879176155}
   TransitionStateInfoList: []
   AnimatorParameterEntries:
@@ -550,6 +550,14 @@ MonoBehaviour:
       ParameterType: 4
     - name: Moving
       NameHash: 949806512
+      Synchronize: 1
+      ParameterType: 4
+    - name: AutoAttack
+      NameHash: -1936938822
+      Synchronize: 1
+      ParameterType: 4
+    - name: Blocking
+      NameHash: -432685563
       Synchronize: 1
       ParameterType: 4
   AnimatorParametersExpanded: 0

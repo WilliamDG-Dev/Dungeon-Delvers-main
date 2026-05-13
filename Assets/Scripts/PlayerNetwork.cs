@@ -24,6 +24,8 @@ public class PlayerNetwork : NetworkBehaviour
 
     private float attackRange = 6;
 
+    private int power;
+
     private void Start()
     {
         if (!IsOwner) return;
@@ -37,15 +39,12 @@ public class PlayerNetwork : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
-
-        Actions();
         
         if(!playerHealthScript.IsDead())
         {
+            Actions();
             PlayerMove();
         }
-
-        PlayersDead();
     }
 
     private void Actions()
@@ -68,10 +67,12 @@ public class PlayerNetwork : NetworkBehaviour
     }
 
     private void DamageEnemy()
-    {
-        if(DistanceCheck(FindClosestEnemy()) <= attackRange)
+    {        
+        if (DistanceCheck(FindClosestEnemy()) <= attackRange)
         {
-            Debug.Log("Damaged Enemy");
+            power = Random.Range(8, 14);
+            EnemyHealth enemyHP = FindClosestEnemy().GetComponent<EnemyHealth>();
+            enemyHP.TakeDamage(power);
         }
     }
 
@@ -105,16 +106,6 @@ public class PlayerNetwork : NetworkBehaviour
 
             Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
             rb.MovePosition(rb.position + moveDir.normalized * moveSpeed * Time.deltaTime);
-        }
-    }
-
-    private void PlayersDead()
-    {
-        Enemy enemyScript = GameObject.Find("Enemy").GetComponent<Enemy>();
-        if(enemyScript.AllPlayersDead())
-        {
-            Relay relay = GameObject.Find("Relay").GetComponent<Relay>();
-            relay.LeaveGame();
         }
     }
 
