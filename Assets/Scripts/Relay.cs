@@ -47,6 +47,8 @@ public class Relay : MonoBehaviour
 
         playerName = "WillDG" + Random.Range(10, 99);
         Debug.Log(playerName);
+
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
 
     private void Update()
@@ -221,8 +223,19 @@ public class Relay : MonoBehaviour
         };
     }
 
+    private void OnClientDisconnected(ulong clientId)
+    {
+        Debug.Log("Disconnected");
+
+        if (NetworkManager.Singleton.IsHost) return;
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+        NetworkManager.Singleton.Shutdown();
+    }
+
     public async void LeaveGame()
-    { 
+    {
         try
         {
             string lobbyId = joinedLobby?.Id;
@@ -230,34 +243,46 @@ public class Relay : MonoBehaviour
             hostLobby = null;
             joinedLobby = null;
 
+            // Leave lobby first
             if (!string.IsNullOrEmpty(lobbyId))
             {
-                if (NetworkManager.Singleton.IsHost)
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
                 {
                     await LobbyService.Instance.DeleteLobbyAsync(lobbyId);
                 }
                 else
                 {
-                    await LobbyService.Instance.RemovePlayerAsync(lobbyId, AuthenticationService.Instance.PlayerId);  
+                    await LobbyService.Instance.RemovePlayerAsync(
+                        lobbyId,
+                        AuthenticationService.Instance.PlayerId
+                    );
                 }
             }
+
+            // Shutdown Netcode
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            // Wait 2 frames (safe teardown window)
+            await Task.Yield();
+            Destroy(NetworkManager.Singleton.gameObject);
+
+            // Reload scene AFTER teardown window
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
         catch (LobbyServiceException e)
         {
             Debug.Log(e);
         }
-        finally
+    }
+
+    private void OnDestroy()
+    {
+        if (NetworkManager.Singleton != null)
         {
-            if (NetworkManager.Singleton.IsHost)
-            {
-                NetworkManager.Singleton.SceneManager.LoadScene(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
-
-                await Task.Delay(1000);
-            }
-            
-            NetworkManager.Singleton.Shutdown();
-
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         }
     }
 }

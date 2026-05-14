@@ -1974,6 +1974,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   ShowTopMostFoldoutHeaderGroup: 1
+  healthBar: {fileID: 0}
 --- !u!114 &6861552043996598672
 MonoBehaviour:
   m_ObjectHideFlags: 0

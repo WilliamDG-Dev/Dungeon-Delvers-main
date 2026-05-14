@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class EnemyHealth : NetworkBehaviour
 {
-    private Slider healthBar;
+    [SerializeField] private Slider healthBar;
     private int startHealth = 500;
     private NetworkVariable<int> enemyCurrentHealth = new NetworkVariable<int>();
     private Animator anim;
@@ -24,7 +24,6 @@ public class EnemyHealth : NetworkBehaviour
 
         if (IsClient)
         {
-            healthBar = GameObject.Find("EnemyHealth").GetComponentInChildren<Slider>();
             healthBar.maxValue = startHealth;
 
             healthBar.value = enemyCurrentHealth.Value;
@@ -57,8 +56,6 @@ public class EnemyHealth : NetworkBehaviour
 
     public void TakeDamage(int amount)
     {
-        if (!IsServer) return;
-
         enemyCurrentHealth.Value -= amount;
     }
 }
