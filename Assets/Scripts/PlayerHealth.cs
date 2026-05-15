@@ -9,7 +9,6 @@ public class PlayerHealth : NetworkBehaviour
     private Slider healthBar;
     private int startHealth = 100;
     private NetworkVariable<int> playerCurrentHealth = new NetworkVariable<int>();
-    private NavMeshObstacle navObstacle;
     private Animator anim;
 
     public override void OnNetworkSpawn()
@@ -20,7 +19,6 @@ public class PlayerHealth : NetworkBehaviour
         }
 
         anim = GetComponent<Animator>();
-        navObstacle = GetComponent<NavMeshObstacle>();
 
         playerCurrentHealth.OnValueChanged += OnHealthChanged;
 
@@ -51,10 +49,15 @@ public class PlayerHealth : NetworkBehaviour
         return playerCurrentHealth.Value <= 0;
     }
 
+    public int HealthLeft()
+    {
+        return playerCurrentHealth.Value;
+    }
+
     private void DeathState()
     {
         anim.SetBool("Died", true);
-        navObstacle.enabled = false;        
+        SoundManager.Instance.PlaySound(SoundType.PlayerDead);
     }
 
     public void TakeDamage(int amount)
@@ -64,6 +67,11 @@ public class PlayerHealth : NetworkBehaviour
         if (!anim.GetBool("Blocking"))
         {
             playerCurrentHealth.Value -= amount;
+            SoundManager.Instance.PlaySound(SoundType.EnemyAttack);
+        }
+        else
+        {
+            SoundManager.Instance.PlaySound(SoundType.Block);
         }
     }
 }

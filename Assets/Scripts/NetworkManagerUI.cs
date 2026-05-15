@@ -23,6 +23,8 @@ public class NetworkManagerUI : MonoBehaviour
 
     private void Awake()
     {
+        SoundManager.Instance.PlayMusic(SoundType.MainMenuMusic);
+
         hostLobbyBtn.onClick.AddListener(() => { LobbyChecks(); UIVisibility(false); });
         leaveLobbyBtn.onClick.AddListener(() => { relay.LeaveGame(); });
 
@@ -100,6 +102,11 @@ public class NetworkManagerUI : MonoBehaviour
         playerHealthBar.gameObject.SetActive(!visible);
         enemyHealthBar.gameObject.SetActive(!visible);
         
+    }
+
+    public void ClickSFX()
+    {
+        SoundManager.Instance.PlaySound(SoundType.UI);
     }
 
     public void ExitGame()

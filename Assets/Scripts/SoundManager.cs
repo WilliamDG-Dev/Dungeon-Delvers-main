@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SoundManager : MonoBehaviour
 {
@@ -11,6 +12,9 @@ public class SoundManager : MonoBehaviour
 
     [SerializeField] private AudioSource audioSourceSFX;
     [SerializeField] private AudioSource audioSourceBG;
+
+    [SerializeField] private Slider musicSlider;
+    [SerializeField] private Slider sfxSlider;
 
     private void Awake()
     {
@@ -26,6 +30,21 @@ public class SoundManager : MonoBehaviour
         }
 
         SoundSetup();
+        SliderSetup();
+    }
+
+    private void SliderSetup()
+    {
+        musicSlider.onValueChanged.AddListener(MusicSlider);
+        sfxSlider.onValueChanged.AddListener(SFXSlider);
+    }
+    private void MusicSlider(float value)
+    {
+        audioSourceBG.volume = musicSlider.value;
+    }
+    private void SFXSlider(float value)
+    {
+        audioSourceSFX.volume = sfxSlider.value;
     }
 
     private void SoundSetup()
@@ -43,8 +62,6 @@ public class SoundManager : MonoBehaviour
                 Debug.LogWarning("Duplicate sound type");
             }
         }
-
-        PlayMusic(SoundType.MainMenuMusic);
     }
 
     public void PlayMusic(SoundType type)
@@ -85,8 +102,11 @@ public enum SoundType
     MainMenuMusic,
     BattleMusic,
 
-    Jump,
     PlayerAttack,
     Block,
-    EnemyAttack
+    UI,
+    PlayerDead,
+    EnemyDead,
+    EnemyAttack,
+    EnemyInjured
 }

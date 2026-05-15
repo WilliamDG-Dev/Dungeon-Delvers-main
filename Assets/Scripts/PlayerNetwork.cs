@@ -23,6 +23,7 @@ public class PlayerNetwork : NetworkBehaviour
     private float turnSmoothVelocity;
 
     private float attackRange = 6;
+    private bool canBlock = true;
 
     private int power;
 
@@ -30,6 +31,7 @@ public class PlayerNetwork : NetworkBehaviour
     {
         if (!IsOwner) return;
 
+        SoundManager.Instance.PlayMusic(SoundType.BattleMusic);
         anim = GetComponent<Animator>();
         playerHealthScript = gameObject.GetComponent<PlayerHealth>();
         cameraTarget = FindFirstObjectByType<CinemachineCamera>();
@@ -49,14 +51,13 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void Actions()
     {
-        anim.SetBool("AutoAttack", Input.GetKeyDown(KeyCode.Alpha1));
-
-        if (Input.GetKeyDown(KeyCode.Alpha2) && !anim.GetBool("Blocking"))
+        anim.SetBool("AutoAttack", Input.GetMouseButtonDown(0));
+            
+        if (Input.GetMouseButtonDown(2) && canBlock)
         {
-            StartCoroutine(BlockInterval(5));
+            StartCoroutine(BlockInterval(4, 5));
         }
-
-        if (Input.GetMouseButton(1))
+        else if (Input.GetMouseButton(1))
         {
             Cursor.lockState = CursorLockMode.Locked;
         }
@@ -66,14 +67,29 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
+    private void GameWon()
+    {
+        Debug.Log("You Won");
+    }
+
     private void DamageEnemy()
-    {        
+    {
         if (DistanceCheck(FindClosestEnemy()) <= attackRange)
         {
             power = Random.Range(8, 14);
             EnemyHealth enemyHP = FindClosestEnemy().GetComponent<EnemyHealth>();
+            if (enemyHP.HealthLeft() <= power)
+            {
+                GameWon();
+            }
             enemyHP.TakeDamage(power);
+            SoundManager.Instance.PlaySound(SoundType.EnemyInjured);
         }
+    }
+
+    private void AutoAttackStart()
+    {
+        SoundManager.Instance.PlaySound(SoundType.PlayerAttack);
     }
 
     private GameObject FindClosestEnemy()
@@ -109,11 +125,19 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
-    private IEnumerator BlockInterval(int time)
+    private IEnumerator BlockInterval(int blockTime, int cooldown)
     {
+        canBlock = false;
+
         anim.SetBool("Blocking", true);
-        yield return new WaitForSeconds(time);
+
+        yield return new WaitForSeconds(blockTime);
+
         anim.SetBool("Blocking", false);
+
+        yield return new WaitForSeconds(cooldown);
+
+        canBlock = true;
     }
 
     private bool Grounded()
