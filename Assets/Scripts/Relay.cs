@@ -243,7 +243,6 @@ public class Relay : MonoBehaviour
             hostLobby = null;
             joinedLobby = null;
 
-            // Leave lobby first
             if (!string.IsNullOrEmpty(lobbyId))
             {
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
@@ -259,17 +258,16 @@ public class Relay : MonoBehaviour
                 }
             }
 
-            // Shutdown Netcode
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.Shutdown();
             }
 
-            // Wait 2 frames (safe teardown window)
             await Task.Yield();
             Destroy(NetworkManager.Singleton.gameObject);
 
-            // Reload scene AFTER teardown window
+            SoundManager.Instance.BeforeSceneLoad();
+
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
         catch (LobbyServiceException e)

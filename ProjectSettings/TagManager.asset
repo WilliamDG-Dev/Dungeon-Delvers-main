@@ -8,6 +8,8 @@ TagManager:
   - CameraTarget
   - FreeLook
   - Enemy
+  - AudioManager
+  - UIManager
   layers:
   - Default
   - TransparentFX

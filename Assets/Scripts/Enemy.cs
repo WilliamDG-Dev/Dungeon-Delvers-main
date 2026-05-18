@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
@@ -69,9 +70,10 @@ public class Enemy : NetworkBehaviour
         {
             power = Random.Range(13, 17);
             PlayerHealth playerHP = currentTarget.GetComponent<PlayerHealth>();
+            PlayerNetwork player = currentTarget.GetComponent<PlayerNetwork>();
             if (playerHP.HealthLeft() <= power && targets.Count == 1)
             {
-                AllPlayersDead();
+                player.AllPlayersDead();
             }
             playerHP.TakeDamage(power);
         }
@@ -104,11 +106,6 @@ public class Enemy : NetworkBehaviour
     private float DistanceToPlayer(GameObject player)
     {
         return Vector3.Distance(player.transform.position, this.transform.position);
-    }
-
-    private void AllPlayersDead()
-    {
-        Debug.Log("All Players Dead");
     }
 
     private void Patrol()

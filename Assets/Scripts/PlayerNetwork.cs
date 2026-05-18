@@ -3,46 +3,75 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Cinemachine;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerNetwork : NetworkBehaviour
 {
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Transform targetTransform;
+
     private Animator anim;
     private PlayerHealth playerHealthScript;
+
     private CinemachineCamera cameraTarget;
     private Transform cam;
-    private float moveSpeed = 5;
-    private float jumpHeight = 8;
-    private float rayDistance = 2;
-    
+
+    private GameObject winScreen;
+    private GameObject loseScreen;
+    private GameObject loadingScreen;
+
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpHeight = 8f;
+    [SerializeField] private float rayDistance = 2f;
+
+    [SerializeField] private float attackRange = 6f;
+    [SerializeField] private float attackCooldown = 1f;
+
+    private bool canAttack = true;
+    private bool canBlock = true;
+
     private float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
 
-    private float attackRange = 6;
-    private bool canBlock = true;
-
-    private int power;
-
     private void Start()
     {
-        if (!IsOwner) return;
-
-        SoundManager.Instance.PlayMusic(SoundType.BattleMusic);
         anim = GetComponent<Animator>();
-        playerHealthScript = gameObject.GetComponent<PlayerHealth>();
-        cameraTarget = FindFirstObjectByType<CinemachineCamera>();
-        cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
-        cameraTarget.Target.TrackingTarget = targetTransform;
+        playerHealthScript = GetComponent<PlayerHealth>();
+
+        if (IsOwner)
+        {
+            winScreen = GameObject.Find("Won");
+            loseScreen = GameObject.Find("Lost");
+            loadingScreen = GameObject.Find("Loading");
+
+            if (winScreen != null)
+                winScreen.SetActive(false);
+
+            if (loseScreen != null)
+                loseScreen.SetActive(false);
+
+            if (loadingScreen != null)
+                loadingScreen.SetActive(false);
+
+            SoundManager.Instance.PlayMusic(SoundType.BattleMusic);
+
+            cameraTarget = FindFirstObjectByType<CinemachineCamera>();
+
+            if (cameraTarget != null)
+            {
+                cameraTarget.Target.TrackingTarget = targetTransform;
+            }
+
+            cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
+        }
     }
+
     private void Update()
     {
-        if (!IsOwner) return;
-        
-        if(!playerHealthScript.IsDead())
+        if (!IsOwner)
+            return;
+
+        if (!playerHealthScript.IsDead())
         {
             Actions();
             PlayerMove();
@@ -51,13 +80,23 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void Actions()
     {
-        anim.SetBool("AutoAttack", Input.GetMouseButtonDown(0));
-            
+        if (Input.GetMouseButtonDown(0) && canAttack)
+        {
+            anim.SetBool("AutoAttack", true);
+
+            StartCoroutine(AttackCooldown());
+        }
+        else
+        {
+            anim.SetBool("AutoAttack", false);
+        }
+
         if (Input.GetMouseButtonDown(2) && canBlock)
         {
-            StartCoroutine(BlockInterval(4, 5));
+            StartCoroutine(BlockInterval(4f, 5f));
         }
-        else if (Input.GetMouseButton(1))
+
+        if (Input.GetMouseButton(1))
         {
             Cursor.lockState = CursorLockMode.Locked;
         }
@@ -67,65 +106,147 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
-    private void GameWon()
+    private IEnumerator AttackCooldown()
     {
-        Debug.Log("You Won");
+        canAttack = false;
+
+        yield return new WaitForSeconds(attackCooldown);
+
+        canAttack = true;
+    }
+    public void DamageEnemy()
+    {
+        if (!IsOwner)
+            return;
+
+        DamageEnemyServerRpc();
     }
 
-    private void DamageEnemy()
+    [ServerRpc]
+    private void DamageEnemyServerRpc(ServerRpcParams rpcParams = default)
     {
-        if (DistanceCheck(FindClosestEnemy()) <= attackRange)
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+
+        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(senderClientId))
+            return;
+
+        GameObject player =
+            NetworkManager.Singleton
+            .ConnectedClients[senderClientId]
+            .PlayerObject
+            .gameObject;
+
+        if (player == null)
+            return;
+
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+
+        if (enemies.Length == 0)
+            return;
+
+        GameObject closestEnemy = null;
+        float closestDistance = Mathf.Infinity;
+
+        foreach (GameObject enemy in enemies)
         {
-            power = Random.Range(8, 14);
-            EnemyHealth enemyHP = FindClosestEnemy().GetComponent<EnemyHealth>();
-            if (enemyHP.HealthLeft() <= power)
+            if (enemy == null)
+                continue;
+
+            float dist = Vector3.Distance(
+                player.transform.position,
+                enemy.transform.position
+            );
+
+            if (dist < closestDistance)
             {
-                GameWon();
+                closestDistance = dist;
+                closestEnemy = enemy;
             }
-            enemyHP.TakeDamage(power);
-            SoundManager.Instance.PlaySound(SoundType.EnemyInjured);
         }
+
+        if (closestEnemy == null)
+            return;
+
+        if (closestDistance > attackRange)
+            return;
+
+        EnemyHealth enemyHP = closestEnemy.GetComponent<EnemyHealth>();
+
+        if (enemyHP == null)
+            return;
+
+        int power = Random.Range(8, 14);
+
+        enemyHP.TakeDamage(power);
+
+        PlayEnemyHitSoundClientRpc();
+
+        if (enemyHP.HealthLeft() <= 0)
+        {
+            PlayerNetwork[] players = FindObjectsByType<PlayerNetwork>(FindObjectsSortMode.None);
+
+            foreach (PlayerNetwork p in players)
+            {
+                p.ShowWinClientRpc();
+            }
+        }
+    }
+
+    [ClientRpc]
+    private void PlayEnemyHitSoundClientRpc()
+    {
+        SoundManager.Instance.PlaySound(SoundType.EnemyInjured);
     }
 
     private void AutoAttackStart()
     {
+        if (!IsOwner)
+            return;
+
         SoundManager.Instance.PlaySound(SoundType.PlayerAttack);
-    }
-
-    private GameObject FindClosestEnemy()
-    {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        return enemies.OrderBy(enemy => DistanceCheck(enemy)).FirstOrDefault();
-    }
-
-    private float DistanceCheck(GameObject otherTarget)
-    {
-        return Vector3.Distance(transform.position, otherTarget.transform.position);
     }
 
     private void PlayerMove()
     {
         float horiz = Input.GetAxisRaw("Horizontal");
         float vert = Input.GetAxisRaw("Vertical");
+
         Vector3 direction = new Vector3(horiz, 0, vert).normalized;
 
-        if (Input.GetKeyDown(KeyCode.Space) && Grounded()) rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
-
+        // JUMP
+        if (Input.GetKeyDown(KeyCode.Space) && Grounded())
+        {
+            rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
+        }
 
         anim.SetBool("Moving", direction.magnitude >= 0.1f);
 
         if (direction.magnitude >= 0.1f)
         {
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
+            float targetAngle =
+                Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg
+                + cam.eulerAngles.y;
+
+            float angle = Mathf.SmoothDampAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                ref turnSmoothVelocity,
+                turnSmoothTime
+            );
+
             rb.MoveRotation(Quaternion.Euler(0, angle, 0));
 
-            Vector3 moveDir = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
-            rb.MovePosition(rb.position + moveDir.normalized * moveSpeed * Time.deltaTime);
+            Vector3 moveDir =
+                Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
+
+            rb.MovePosition(
+                rb.position
+                + moveDir.normalized * moveSpeed * Time.deltaTime
+            );
         }
     }
 
-    private IEnumerator BlockInterval(int blockTime, int cooldown)
+    private IEnumerator BlockInterval(float blockTime, float cooldown)
     {
         canBlock = false;
 
@@ -142,6 +263,61 @@ public class PlayerNetwork : NetworkBehaviour
 
     private bool Grounded()
     {
-        return Physics.Raycast(transform.position + new Vector3(0,1,0), Vector3.down, rayDistance, LayerMask.GetMask("Ground"));
+        return Physics.Raycast(
+            transform.position + new Vector3(0, 1, 0),
+            Vector3.down,
+            rayDistance,
+            LayerMask.GetMask("Ground")
+        );
+    }
+    public void AllPlayersDead()
+    {
+        if (!IsServer)
+            return;
+
+        PlayerNetwork[] players = FindObjectsByType<PlayerNetwork>(
+            FindObjectsSortMode.None
+        );
+
+        foreach (PlayerNetwork player in players)
+        {
+            player.ShowLoseClientRpc();
+        }
+    }
+
+    [ClientRpc]
+    public void ShowWinClientRpc()
+    {
+        StartCoroutine(GameWon(2f));
+    }
+
+    [ClientRpc]
+    public void ShowLoseClientRpc()
+    {
+        StartCoroutine(GameLost(2f));
+    }
+
+    private IEnumerator GameWon(float seconds)
+    {
+        Debug.Log("YOU WON");
+
+        yield return new WaitForSeconds(seconds);
+
+        if (IsOwner && winScreen != null)
+        {
+            winScreen.SetActive(true);
+        }
+    }
+
+    private IEnumerator GameLost(float seconds)
+    {
+        Debug.Log("ALL PLAYERS DEAD");
+
+        yield return new WaitForSeconds(seconds);
+
+        if (IsOwner && loseScreen != null)
+        {
+            loseScreen.SetActive(true);
+        }
     }
 }

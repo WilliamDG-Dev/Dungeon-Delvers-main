@@ -19,13 +19,14 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private GameObject playerHealthBar;
     [SerializeField] private GameObject enemyHealthBar;
     [SerializeField] private GameObject joinGameScreen;
+    [SerializeField] private GameObject loadingScreen;
     [SerializeField] private List<GameObject> lobbyButtonList = new List<GameObject>();
 
     private void Awake()
     {
         SoundManager.Instance.PlayMusic(SoundType.MainMenuMusic);
 
-        hostLobbyBtn.onClick.AddListener(() => { LobbyChecks(); UIVisibility(false); });
+        hostLobbyBtn.onClick.AddListener(() => { LobbyChecks(); UIVisibility(false);  });
         leaveLobbyBtn.onClick.AddListener(() => { relay.LeaveGame(); });
 
         for (int index = 0; index < lobbyButtonList.Count; index++)
@@ -51,7 +52,7 @@ public class NetworkManagerUI : MonoBehaviour
 
     private void LobbyChecks()
     {
-        if (enterlobbyName.text == null || enterlobbyName.text.Trim() == "") 
+        if ((enterlobbyName.text == null || enterlobbyName.text.Trim() == "") || enterlobbyName.text.Length > 12) 
         {
             relay.CreateLobby("Lobby" + Random.Range(10,99)); 
         }
@@ -98,6 +99,7 @@ public class NetworkManagerUI : MonoBehaviour
         {
             element.gameObject.SetActive(visible);
         }
+        loadingScreen.SetActive(!visible);
         leaveLobbyBtn.gameObject.SetActive(!visible);
         playerHealthBar.gameObject.SetActive(!visible);
         enemyHealthBar.gameObject.SetActive(!visible);

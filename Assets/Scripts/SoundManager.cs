@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SoundManager : MonoBehaviour
@@ -13,38 +14,48 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioSource audioSourceSFX;
     [SerializeField] private AudioSource audioSourceBG;
 
-    [SerializeField] private Slider musicSlider;
-    [SerializeField] private Slider sfxSlider;
-
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
             return;
         }
-
         SoundSetup();
-        SliderSetup();
     }
 
-    private void SliderSetup()
+
+    private void OnDestroy()
     {
-        musicSlider.onValueChanged.AddListener(MusicSlider);
-        sfxSlider.onValueChanged.AddListener(SFXSlider);
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
-    private void MusicSlider(float value)
+
+    public void BeforeSceneLoad()
     {
-        audioSourceBG.volume = musicSlider.value;
+        PlayerPrefs.SetFloat("Music", audioSourceBG.volume);
+        PlayerPrefs.SetFloat("SFX", audioSourceSFX.volume);
     }
-    private void SFXSlider(float value)
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        audioSourceSFX.volume = sfxSlider.value;
+        audioSourceBG.volume = PlayerPrefs.GetFloat("Music");
+        audioSourceSFX.volume = PlayerPrefs.GetFloat("SFX");
+    }
+
+    public void MusicSlider(Slider slider)
+    {
+        audioSourceBG.volume = slider.value;
+    }
+
+    public void SFXSlider(Slider slider)
+    {
+        audioSourceSFX.volume = slider.value;
     }
 
     private void SoundSetup()
@@ -87,6 +98,12 @@ public class SoundManager : MonoBehaviour
         {
             Debug.LogWarning("Sound not found");
         }
+    }
+
+    private void OnApplicationQuit()
+    {
+        PlayerPrefs.SetFloat("Music", audioSourceBG.volume);
+        PlayerPrefs.SetFloat("SFX", audioSourceSFX.volume);
     }
 }
 
