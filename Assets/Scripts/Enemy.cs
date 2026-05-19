@@ -15,8 +15,10 @@ public class Enemy : NetworkBehaviour
     [SerializeField] private NavMeshAgent thisEnemy;
     [SerializeField] private Animator anim;
 
-    private float attackRange = 8;
+    private float attackRange = 6;
     private float sightRange = 16;
+
+    private bool attackCooldownActive = false;
 
     private int power;
 
@@ -49,7 +51,7 @@ public class Enemy : NetworkBehaviour
                     Patrol();
                 }
 
-                else if (distanceFromPlayer <= attackRange)
+                else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
                 {
                     thisEnemy.isStopped = true;
 
@@ -57,13 +59,20 @@ public class Enemy : NetworkBehaviour
 
                     transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
 
-                    anim.SetBool("Attacking", true);
+                    anim.SetTrigger("Attacking");
+                    StartCoroutine(AttackCooldown(2.5f));
                 }
             }
         }
     }
 
-    // ANIMATION EVENT
+    private IEnumerator AttackCooldown(float seconds)
+    {
+        attackCooldownActive = true;
+        yield return new WaitForSeconds(seconds);
+        attackCooldownActive = false;
+    }
+
     private void DamagePlayer()
     {
         if (currentTarget != null && DistanceToPlayer(currentTarget) <= attackRange)
@@ -110,7 +119,6 @@ public class Enemy : NetworkBehaviour
 
     private void Patrol()
     {
-        anim.SetBool("Attacking", false);
         thisEnemy.isStopped = false;
         anim.SetBool("Walking", true);
 
@@ -123,7 +131,6 @@ public class Enemy : NetworkBehaviour
 
     private void ChasePlayer()
     {
-        anim.SetBool("Attacking", false);
         anim.SetBool("Walking", true);
 
         thisEnemy.isStopped = false;

@@ -8,7 +8,7 @@ public class EnemyHealth : NetworkBehaviour
 {
     [SerializeField] private Slider healthBar;
     [SerializeField] private NavMeshAgent navAgent;
-    private int startHealth = 50;
+    private int startHealth = 500;
     private NetworkVariable<int> enemyCurrentHealth = new NetworkVariable<int>();
     private Animator anim;
 

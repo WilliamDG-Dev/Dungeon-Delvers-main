@@ -20,12 +20,12 @@ public class PlayerNetwork : NetworkBehaviour
     private GameObject loseScreen;
     private GameObject loadingScreen;
 
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpHeight = 8f;
-    [SerializeField] private float rayDistance = 2f;
+    [SerializeField] private float moveSpeed = 6;
+    [SerializeField] private float jumpHeight = 8;
+    [SerializeField] private float rayDistance = 2;
 
-    [SerializeField] private float attackRange = 6f;
-    [SerializeField] private float attackCooldown = 1f;
+    [SerializeField] private float attackRange = 6;
+    [SerializeField] private float attackCooldown = 1;
 
     private bool canAttack = true;
     private bool canBlock = true;
@@ -213,7 +213,6 @@ public class PlayerNetwork : NetworkBehaviour
 
         Vector3 direction = new Vector3(horiz, 0, vert).normalized;
 
-        // JUMP
         if (Input.GetKeyDown(KeyCode.Space) && Grounded())
         {
             rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
@@ -288,19 +287,17 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     public void ShowWinClientRpc()
     {
-        StartCoroutine(GameWon(2f));
+        StartCoroutine(GameWon(8));
     }
 
     [ClientRpc]
     public void ShowLoseClientRpc()
     {
-        StartCoroutine(GameLost(2f));
+        StartCoroutine(GameLost(4));
     }
 
     private IEnumerator GameWon(float seconds)
     {
-        Debug.Log("YOU WON");
-
         yield return new WaitForSeconds(seconds);
 
         if (IsOwner && winScreen != null)
@@ -311,8 +308,6 @@ public class PlayerNetwork : NetworkBehaviour
 
     private IEnumerator GameLost(float seconds)
     {
-        Debug.Log("ALL PLAYERS DEAD");
-
         yield return new WaitForSeconds(seconds);
 
         if (IsOwner && loseScreen != null)
