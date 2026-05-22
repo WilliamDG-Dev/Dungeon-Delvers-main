@@ -15,7 +15,7 @@ public class Enemy : NetworkBehaviour
     [SerializeField] private NavMeshAgent thisEnemy;
     [SerializeField] private Animator anim;
 
-    private float attackRange = 6;
+    private float attackRange = 6.5f;
     private float sightRange = 16;
 
     private bool attackCooldownActive = false;
@@ -33,22 +33,23 @@ public class Enemy : NetworkBehaviour
 
         if (!anim.GetBool("Died"))
         {
-            if (currentTarget == null)
-            {
-                Patrol();
-            }
-            else
+            if (currentTarget != null)
             {
                 float distanceFromPlayer = DistanceToPlayer(currentTarget);
 
-                if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+                if (distanceFromPlayer < sightRange)
                 {
-                    ChasePlayer();
+                    transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
                 }
 
-                else if (distanceFromPlayer > sightRange)
+                if (distanceFromPlayer > sightRange)
                 {
                     Patrol();
+                }
+
+                else if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+                {
+                    ChasePlayer();
                 }
 
                 else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
@@ -57,12 +58,11 @@ public class Enemy : NetworkBehaviour
 
                     anim.SetBool("Walking", false);
 
-                    transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
-
                     anim.SetTrigger("Attacking");
                     StartCoroutine(AttackCooldown(2.5f));
                 }
             }
+
         }
     }
 
@@ -103,7 +103,10 @@ public class Enemy : NetworkBehaviour
                 .OrderBy(player => DistanceToPlayer(player))
                 .ToList();
 
-            currentTarget = targets[0];
+            if (DistanceToPlayer(targets[0]) > attackRange)
+            {
+                currentTarget = targets[0];
+            }
         }
         catch
         {

@@ -10788,6 +10788,10 @@ PrefabInstance:
       propertyPath: healthBar
       value: 
       objectReference: {fileID: 329755255}
+    - target: {fileID: 5500751572919717680, guid: 3681aef319a87aa45a076bc197f3e2cb, type: 3}
+      propertyPath: m_StoppingDistance
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6819262327428601570, guid: 3681aef319a87aa45a076bc197f3e2cb, type: 3}
       propertyPath: m_Name
       value: EnemyEmpty

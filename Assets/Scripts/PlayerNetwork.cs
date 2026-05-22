@@ -24,7 +24,7 @@ public class PlayerNetwork : NetworkBehaviour
     [SerializeField] private float jumpHeight = 8;
     [SerializeField] private float rayDistance = 2;
 
-    [SerializeField] private float attackRange = 6;
+    [SerializeField] private float attackRange = 6.5f;
     [SerializeField] private float attackCooldown = 1;
 
     private bool canAttack = true;
@@ -75,6 +75,10 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Actions();
             PlayerMove();
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
         }
     }
 
