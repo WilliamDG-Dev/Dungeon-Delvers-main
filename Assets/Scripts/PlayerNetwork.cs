@@ -192,13 +192,22 @@ public class PlayerNetwork : NetworkBehaviour
 
         PlayEnemyHitSoundClientRpc();
 
+        Debug.Log(enemies.Length);
+
         if (enemyHP.HealthLeft() <= 0)
         {
             PlayerNetwork[] players = FindObjectsByType<PlayerNetwork>(FindObjectsSortMode.None);
 
-            foreach (PlayerNetwork p in players)
+            if (enemies.Length == 1)
             {
-                p.ShowWinClientRpc();
+                foreach (PlayerNetwork p in players)
+                {
+                    p.ShowWinClientRpc();
+                }
+            }
+            else
+            {
+                closestEnemy.SetActive(false);
             }
         }
     }

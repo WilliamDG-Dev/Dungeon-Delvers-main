@@ -16,8 +16,10 @@ public class Enemy : NetworkBehaviour
     [SerializeField] private Animator anim;
     [SerializeField] ParticleSystem partical;
 
-    private float attackRange = 6.5f;
-    private float sightRange = 16;
+    [SerializeField] private bool isBoss;
+
+    [SerializeField] private float attackRange = 6.5f;
+    [SerializeField] private float sightRange = 16;
 
     private bool attackCooldownActive = false;
 
@@ -60,7 +62,7 @@ public class Enemy : NetworkBehaviour
 
                     Debug.Log(random);
 
-                    if (random == 2)
+                    if (random == 2 && isBoss)
                     {
                         LeapAttack();
                     }
@@ -82,7 +84,7 @@ public class Enemy : NetworkBehaviour
         anim.SetBool("Walking", false);
 
         anim.SetTrigger("JumpAttack");
-        StartCoroutine(AttackCooldown(2.5f));
+        StartCoroutine(AttackCooldown(4));
     }
 
     private IEnumerator AttackCooldown(float seconds)
