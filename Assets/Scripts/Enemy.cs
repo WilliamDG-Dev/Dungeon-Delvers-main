@@ -22,6 +22,8 @@ public class Enemy : NetworkBehaviour
 
     private int power;
 
+    private int normalAttackCounter = 0;
+
     private GameObject currentTarget;
     private List<GameObject> targets = new List<GameObject>();
 
@@ -37,29 +39,49 @@ public class Enemy : NetworkBehaviour
             {
                 float distanceFromPlayer = DistanceToPlayer(currentTarget);
 
-                if (distanceFromPlayer < sightRange)
+                if (normalAttackCounter < 3)
                 {
-                    transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
+                    if (distanceFromPlayer < sightRange)
+                    {
+                        transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
+                    }
+
+                    if (distanceFromPlayer > sightRange)
+                    {
+                        Patrol();
+                    }
+
+                    else if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+                    {
+                        ChasePlayer();
+                    }
+
+                    else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
+                    {
+                        thisEnemy.isStopped = true;
+
+                        anim.SetBool("Walking", false);
+
+                        anim.SetTrigger("Attacking");
+                        normalAttackCounter++;
+                        StartCoroutine(AttackCooldown(2.5f));
+                    }
                 }
-
-                if (distanceFromPlayer > sightRange)
+                else
                 {
-                    Patrol();
-                }
+                    if (distanceFromPlayer < sightRange)
+                    {
+                        thisEnemy.isStopped = true;
 
-                else if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
-                {
-                    ChasePlayer();
-                }
+                        Vector3 targetCurrentPos = currentTarget.transform.position;
 
-                else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
-                {
-                    thisEnemy.isStopped = true;
+                        anim.SetBool("Walking", false);
 
-                    anim.SetBool("Walking", false);
+                        thisEnemy.SetDestination(targetCurrentPos);
 
-                    anim.SetTrigger("Attacking");
-                    StartCoroutine(AttackCooldown(2.5f));
+                        anim.SetTrigger("JumpAttack");
+                        normalAttackCounter = 0;
+                    }
                 }
             }
 
@@ -75,9 +97,19 @@ public class Enemy : NetworkBehaviour
 
     private void DamagePlayer()
     {
+        DamageDeal(13, 17);
+    }
+
+    private void JumpAttack()
+    {
+        DamageDeal(20, 30);
+    }
+
+    private void DamageDeal(int minDamage, int maxDamage)
+    {
         if (currentTarget != null && DistanceToPlayer(currentTarget) <= attackRange)
         {
-            power = Random.Range(13, 17);
+            power = Random.Range(minDamage, maxDamage);
             PlayerHealth playerHP = currentTarget.GetComponent<PlayerHealth>();
             PlayerNetwork player = currentTarget.GetComponent<PlayerNetwork>();
             if (playerHP.HealthLeft() <= power && targets.Count == 1)

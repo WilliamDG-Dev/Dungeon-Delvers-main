@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Cinemachine;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerNetwork : NetworkBehaviour
@@ -29,6 +30,7 @@ public class PlayerNetwork : NetworkBehaviour
 
     private bool canAttack = true;
     private bool canBlock = true;
+    private bool canSpin = true;
 
     private float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
@@ -97,7 +99,12 @@ public class PlayerNetwork : NetworkBehaviour
 
         if (Input.GetMouseButtonDown(2) && canBlock)
         {
-            StartCoroutine(BlockInterval(4f, 5f));
+            StartCoroutine(BlockInterval(4, 5));
+        }
+
+        if(Input.GetKeyDown(KeyCode.F) && canSpin)
+        {
+            StartCoroutine(SpinInterval(6, 5));
         }
 
         if (Input.GetMouseButton(1))
@@ -202,6 +209,9 @@ public class PlayerNetwork : NetworkBehaviour
         SoundManager.Instance.PlaySound(SoundType.EnemyInjured);
     }
 
+
+
+    //Animation Event
     private void AutoAttackStart()
     {
         if (!IsOwner)
@@ -262,6 +272,21 @@ public class PlayerNetwork : NetworkBehaviour
         yield return new WaitForSeconds(cooldown);
 
         canBlock = true;
+    }
+
+    private IEnumerator SpinInterval(float spinTime, float cooldown)
+    {
+        canSpin = false;
+
+        anim.SetBool("SwordSpin", true);
+
+        yield return new WaitForSeconds(spinTime);
+
+        anim.SetBool("SwordSpin", false);
+
+        yield return new WaitForSeconds(cooldown);
+
+        canSpin = true;
     }
 
     private bool Grounded()
