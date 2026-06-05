@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class PlayerHealth : NetworkBehaviour
 {
+    [SerializeField] private ParticleSystem particle;
     private Slider healthBar;
     private int startHealth = 100;
     private NetworkVariable<int> playerCurrentHealth = new NetworkVariable<int>();
@@ -68,6 +69,7 @@ public class PlayerHealth : NetworkBehaviour
         {
             playerCurrentHealth.Value -= amount;
             SoundManager.Instance.PlaySound(SoundType.EnemyAttack);
+            particle.Emit(30);
         }
         else
         {

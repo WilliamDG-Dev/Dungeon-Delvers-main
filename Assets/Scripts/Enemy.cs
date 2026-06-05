@@ -14,6 +14,7 @@ public class Enemy : NetworkBehaviour
 
     [SerializeField] private NavMeshAgent thisEnemy;
     [SerializeField] private Animator anim;
+    [SerializeField] ParticleSystem partical;
 
     private float attackRange = 6.5f;
     private float sightRange = 16;
@@ -21,8 +22,6 @@ public class Enemy : NetworkBehaviour
     private bool attackCooldownActive = false;
 
     private int power;
-
-    private int normalAttackCounter = 0;
 
     private GameObject currentTarget;
     private List<GameObject> targets = new List<GameObject>();
@@ -39,53 +38,51 @@ public class Enemy : NetworkBehaviour
             {
                 float distanceFromPlayer = DistanceToPlayer(currentTarget);
 
-                if (normalAttackCounter < 3)
+                if (distanceFromPlayer < sightRange)
                 {
-                    if (distanceFromPlayer < sightRange)
+                    transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
+                }
+
+                if (distanceFromPlayer > sightRange)
+                {
+                    Patrol();
+                }
+
+                else if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
+                {
+                    ChasePlayer();
+                }
+
+                else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
+                {
+                    thisEnemy.isStopped = true;
+                    int random = Random.Range(0, 3);
+
+                    Debug.Log(random);
+
+                    if (random == 2)
                     {
-                        transform.LookAt(new Vector3(currentTarget.transform.position.x, transform.position.y, currentTarget.transform.position.z));
+                        LeapAttack();
                     }
-
-                    if (distanceFromPlayer > sightRange)
+                    else
                     {
-                        Patrol();
-                    }
-
-                    else if (distanceFromPlayer <= sightRange && distanceFromPlayer > attackRange)
-                    {
-                        ChasePlayer();
-                    }
-
-                    else if (distanceFromPlayer <= attackRange && !attackCooldownActive)
-                    {
-                        thisEnemy.isStopped = true;
-
                         anim.SetBool("Walking", false);
 
                         anim.SetTrigger("Attacking");
-                        normalAttackCounter++;
                         StartCoroutine(AttackCooldown(2.5f));
-                    }
-                }
-                else
-                {
-                    if (distanceFromPlayer < sightRange)
-                    {
-                        thisEnemy.isStopped = true;
-
-                        Vector3 targetCurrentPos = currentTarget.transform.position;
-
-                        anim.SetBool("Walking", false);
-
-                        thisEnemy.SetDestination(targetCurrentPos);
-
-                        anim.SetTrigger("JumpAttack");
-                        normalAttackCounter = 0;
                     }
                 }
             }
 
         }
+    }
+
+    private void LeapAttack()
+    {
+        anim.SetBool("Walking", false);
+
+        anim.SetTrigger("JumpAttack");
+        StartCoroutine(AttackCooldown(2.5f));
     }
 
     private IEnumerator AttackCooldown(float seconds)
@@ -103,6 +100,7 @@ public class Enemy : NetworkBehaviour
     private void JumpAttack()
     {
         DamageDeal(20, 30);
+        partical.Emit(350);
     }
 
     private void DamageDeal(int minDamage, int maxDamage)
