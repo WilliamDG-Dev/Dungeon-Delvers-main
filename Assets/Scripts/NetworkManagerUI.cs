@@ -17,7 +17,7 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button hostLobbyBtn;
     [SerializeField] private Button leaveLobbyBtn;
     [SerializeField] private GameObject playerHealthBar;
-    [SerializeField] private GameObject enemyHealthBar;
+    //[SerializeField] private GameObject enemyHealthBar;
     [SerializeField] private GameObject joinGameScreen;
     [SerializeField] private GameObject loadingScreen;
     [SerializeField] private List<GameObject> lobbyButtonList = new List<GameObject>();
@@ -102,7 +102,7 @@ public class NetworkManagerUI : MonoBehaviour
         loadingScreen.SetActive(!visible);
         leaveLobbyBtn.gameObject.SetActive(!visible);
         playerHealthBar.gameObject.SetActive(!visible);
-        enemyHealthBar.gameObject.SetActive(!visible);
+        //enemyHealthBar.gameObject.SetActive(!visible);
         
     }
 

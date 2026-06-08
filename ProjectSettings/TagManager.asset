@@ -10,6 +10,7 @@ TagManager:
   - Enemy
   - AudioManager
   - UIManager
+  - Boss
   layers:
   - Default
   - TransparentFX

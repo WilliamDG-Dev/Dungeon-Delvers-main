@@ -150,7 +150,11 @@ public class PlayerNetwork : NetworkBehaviour
         if (player == null)
             return;
 
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        GameObject[] enemies = FindObjectsByType<GameObject>(
+        FindObjectsInactive.Include,
+        FindObjectsSortMode.None)
+        .Where(go => go.CompareTag("Enemy"))
+        .ToArray();
 
         if (enemies.Length == 0)
             return;
@@ -198,6 +202,13 @@ public class PlayerNetwork : NetworkBehaviour
         {
             PlayerNetwork[] players = FindObjectsByType<PlayerNetwork>(FindObjectsSortMode.None);
 
+            NetworkObject enemyNetObj = closestEnemy.transform.parent.GetComponent<NetworkObject>();
+
+            NetworkObject bossNetObj = GameObject.FindWithTag("Boss").GetComponent<NetworkObject>();
+
+
+            if (enemyNetObj == null || bossNetObj == null) return;
+
             if (enemies.Length == 1)
             {
                 foreach (PlayerNetwork p in players)
@@ -205,9 +216,20 @@ public class PlayerNetwork : NetworkBehaviour
                     p.ShowWinClientRpc();
                 }
             }
+            else if (enemies.Length == 2)
+            {
+                foreach (PlayerNetwork p in players)
+                {
+                    p.DestroyEnemyClientRpc(enemyNetObj);
+                    p.ActivateBossClientRpc(bossNetObj, true);
+                }
+            }
             else
             {
-                closestEnemy.SetActive(false);
+                foreach (PlayerNetwork p in players)
+                {
+                    p.DestroyEnemyClientRpc(enemyNetObj);
+                }
             }
         }
     }
@@ -326,6 +348,24 @@ public class PlayerNetwork : NetworkBehaviour
     public void ShowWinClientRpc()
     {
         StartCoroutine(GameWon(8));
+    }
+
+    [ClientRpc]
+    public void DestroyEnemyClientRpc(NetworkObjectReference enemyRef)
+    {
+        if(enemyRef.TryGet(out NetworkObject enemy))
+        {
+            Destroy(enemy.gameObject, 4);
+        }
+    }
+
+    [ClientRpc]
+    public void ActivateBossClientRpc(NetworkObjectReference bossRef, bool active)
+    {
+        if (bossRef.TryGet(out NetworkObject boss))
+        {
+            boss.gameObject.GetComponentInChildren<SkinnedMeshRenderer>().enabled = active;
+        }
     }
 
     [ClientRpc]
